@@ -4,6 +4,7 @@ const idl = {
   token: require("../target/idl/token.json"),
 };
 const { Metaplex } = require("@metaplex-foundation/js");
+const { getOrCreateAssociatedTokenAccount } = require("@solana/spl-token");
 
 module.exports = token;
 
@@ -68,10 +69,11 @@ async function token(provider) {
     .pdas()
     .metadata({ mint: mintAccount.publicKey });
 
-  const name = "Ass Token";
-  const symbol = "ASS";
+  const name = "The Runner's Token";
+  const symbol = "RUN";
+  const supply = new anchor.BN(1000000000).mul(new anchor.BN(1000000000));
   const url =
-    "https://raw.githubusercontent.com/solana-developers/program-examples/new-examples/tokens/tokens/.assets/nft.json";
+    "https://raw.githubusercontent.com/letusrun/run-token/main/token.json";
   // Add your test here.
   const tx1 = await program.methods
     .createTokenMint(wallet.publicKey, 9, name, symbol, url)
@@ -90,4 +92,25 @@ async function token(provider) {
   console.log("create token tx", tx1);
   console.log("mint account public", mintAccount.publicKey.toBase58());
   console.log("data account public", dataAccount.publicKey.toBase58());
+
+  console.log("mint token to my wallet...");
+  // Wallet's associated token account address for mint
+  const tokenAccount = await getOrCreateAssociatedTokenAccount(
+    connection,
+    wallet.payer,
+    mintAccount.publicKey,
+    wallet.publicKey
+  );
+
+  const tx3 = await program.methods
+    .mintTo(
+      new anchor.BN(supply) // amount to mint
+    )
+    .accounts({
+      mintAuthority: wallet.publicKey,
+      tokenAccount: tokenAccount.address,
+      mint: mintAccount.publicKey,
+    })
+    .rpc();
+  console.log("mint token tx", tx3);
 }
