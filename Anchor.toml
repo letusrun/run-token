@@ -5,13 +5,14 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-run_election = "2E9AkSqVbakqo67j2PjBD27TPZt186EkAoNVghN5mhNM"
+election = "GzPfcvPz81cigZDy9M6w3vrL5iHbP67VkqVVNb1xGbrY"
+token = "9Hg5X6Tb9KrSx9sMzkeU32tzUyXbC5j9Yqx3TF4Eti4w"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "/home/devil/.config/solana/id.json"
 
 [scripts]

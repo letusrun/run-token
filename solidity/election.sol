@@ -1,7 +1,7 @@
-import "./system.sol";
+import "../lib/system.sol";
 
-@program_id("2E9AkSqVbakqo67j2PjBD27TPZt186EkAoNVghN5mhNM")
-contract run_election {
+@program_id("GzPfcvPz81cigZDy9M6w3vrL5iHbP67VkqVVNb1xGbrY")
+contract election {
     struct Runner {
         string name;
         uint64 vote;

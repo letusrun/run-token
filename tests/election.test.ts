@@ -1,10 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { RunElection } from "../target/types/run_election";
+import { Election } from "../target/types/election";
 import { assert } from "chai";
 
-describe("run-contract", () => {
-  const program = anchor.workspace.RunElection as Program<RunElection>;
+describe("election program", () => {
+  const program = anchor.workspace.Election as Program<Election>;
 
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
