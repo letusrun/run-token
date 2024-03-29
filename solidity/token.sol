@@ -62,9 +62,7 @@ contract token {
     @mutableAccount(from) // token account to transfer from
     @mutableAccount(to) // token account to transfer to
     @signer(owner)
-    function transferTokens(
-        uint64 amount // amount to transfer
-    ) external {
+    function transferTokens(uint64 amount) external {
         SplToken.transfer(
             tx.accounts.from.key,
             tx.accounts.to.key,

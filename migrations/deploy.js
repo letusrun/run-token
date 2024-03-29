@@ -69,9 +69,11 @@ async function token(provider) {
     .pdas()
     .metadata({ mint: mintAccount.publicKey });
 
-  const name = "The Runner's Token";
+  const name = "Runner's Token";
   const symbol = "RUN";
-  const supply = new anchor.BN(1000000000).mul(new anchor.BN(1000000000));
+  const supply = new anchor.BN(1680000000).mul(
+    new anchor.BN(10).pow(new anchor.BN(9))
+  );
   const url =
     "https://raw.githubusercontent.com/letusrun/run-token/main/token.json";
   // Add your test here.
@@ -93,7 +95,7 @@ async function token(provider) {
   console.log("mint account public", mintAccount.publicKey.toBase58());
   console.log("data account public", dataAccount.publicKey.toBase58());
 
-  console.log("mint token to my wallet...");
+  console.log("mint token to creator wallet...");
   // Wallet's associated token account address for mint
   const tokenAccount = await getOrCreateAssociatedTokenAccount(
     connection,

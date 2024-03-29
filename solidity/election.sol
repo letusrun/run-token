@@ -36,7 +36,7 @@ contract election {
 
     @mutableAccount(from)
     @mutableSigner(owner)
-    function withdraw(uint64 lamports) external view {
+    function withdraw(uint64 lamports) external {
         assert(tx.accounts.owner.key == owner && tx.accounts.owner.is_signer);
 
         AccountInfo from = tx.accounts.from;

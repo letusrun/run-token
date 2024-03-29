@@ -1,7 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Metaplex } from "@metaplex-foundation/js";
-import { getOrCreateAssociatedTokenAccount, } from "@solana/spl-token";
+import {
+  getAccount,
+  getAssociatedTokenAddress,
+  getOrCreateAssociatedTokenAccount,
+  createBurnInstruction,
+} from "@solana/spl-token";
 import { Token } from "../target/types/token";
 
 describe("Transfer Tokens", () => {
@@ -10,7 +15,7 @@ describe("Transfer Tokens", () => {
   anchor.setProvider(provider);
 
   const dataAccount = anchor.web3.Keypair.generate();
-  const mintKeypair = anchor.web3.Keypair.generate();
+  const mintAccount = anchor.web3.Keypair.generate();
   const wallet = provider.wallet as anchor.Wallet;
   const connection = provider.connection;
 
@@ -18,7 +23,8 @@ describe("Transfer Tokens", () => {
 
   const nftTitle = "Test Token";
   const nftSymbol = "TEST";
-  const nftUri = "https://raw.githubusercontent.com/letusrun/run-token/main/token.json";
+  const nftUri =
+    "https://raw.githubusercontent.com/letusrun/run-token/main/token.json";
 
   it("Is initialized!", async () => {
     // Add your test here.
@@ -35,7 +41,7 @@ describe("Transfer Tokens", () => {
     const metadataAddress = metaplex
       .nfts()
       .pdas()
-      .metadata({ mint: mintKeypair.publicKey });
+      .metadata({ mint: mintAccount.publicKey });
 
     // Add your test here.
     const tx = await program.methods
@@ -48,7 +54,7 @@ describe("Transfer Tokens", () => {
       )
       .accounts({
         payer: wallet.publicKey,
-        mint: mintKeypair.publicKey,
+        mint: mintAccount.publicKey,
         metadata: metadataAddress,
         mintAuthority: wallet.publicKey,
         rentAddress: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -56,31 +62,43 @@ describe("Transfer Tokens", () => {
           "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
         ),
       })
-      .signers([mintKeypair])
+      .signers([mintAccount])
       .rpc();
     console.log("Create token tx", tx);
   });
 
-  it("Mint some tokens to your wallet!", async () => {
+  it("Mint some tokens to token account!", async () => {
     // Wallet's associated token account address for mint
     const tokenAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer, // payer
-      mintKeypair.publicKey, // mint
+      mintAccount.publicKey, // mint
       wallet.publicKey // owner
     );
 
     const tx = await program.methods
       .mintTo(
-        new anchor.BN(150) // amount to mint
+        new anchor.BN(1680000000).mul(new anchor.BN(10).pow(new anchor.BN(9)))
       )
       .accounts({
         mintAuthority: wallet.publicKey,
         tokenAccount: tokenAccount.address,
-        mint: mintKeypair.publicKey,
+        mint: mintAccount.publicKey,
       })
       .rpc();
-    console.log("Your transaction signature", tx);
+    console.log("Mint token tx", tx);
+    console.log(
+      "Token in wallet after mint",
+      (
+        await getAccount(
+          connection,
+          await getAssociatedTokenAddress(
+            mintAccount.publicKey,
+            wallet.publicKey
+          )
+        )
+      ).amount.toString()
+    );
   });
 
   it("Transfer some tokens to another wallet!", async () => {
@@ -88,7 +106,7 @@ describe("Transfer Tokens", () => {
     const tokenAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer, // payer
-      mintKeypair.publicKey, // mint
+      mintAccount.publicKey, // mint
       wallet.publicKey // owner
     );
 
@@ -96,18 +114,55 @@ describe("Transfer Tokens", () => {
     const receipientTokenAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       wallet.payer, // payer
-      mintKeypair.publicKey, // mint account
+      mintAccount.publicKey, // mint account
       receipient.publicKey // owner account
     );
 
     const tx = await program.methods
-      .transferTokens(new anchor.BN(150))
+      .transferTokens(
+        new anchor.BN(80000000).mul(new anchor.BN(10).pow(new anchor.BN(9)))
+      )
       .accounts({
         from: tokenAccount.address,
         to: receipientTokenAccount.address,
         owner: wallet.publicKey,
       })
       .rpc();
-    console.log("Your transaction signature", tx);
+    console.log("Transfer token tx", tx);
+    console.log(
+      "Token in wallet after transfer",
+      (
+        await getAccount(
+          connection,
+          await getAssociatedTokenAddress(
+            mintAccount.publicKey,
+            wallet.publicKey
+          )
+        )
+      ).amount.toString()
+    );
+  });
+
+  it("burn some tokens", async () => {
+    const tx = createBurnInstruction(
+      await getAssociatedTokenAddress(mintAccount.publicKey, wallet.publicKey),
+      mintAccount.publicKey,
+      wallet.publicKey,
+      BigInt(600000000) * BigInt(10) ** BigInt(9)
+    );
+    const transaction = new anchor.web3.Transaction().add(tx);
+    await provider.sendAndConfirm(transaction);
+    console.log(
+      "Token in wallet after burn",
+      (
+        await getAccount(
+          connection,
+          await getAssociatedTokenAddress(
+            mintAccount.publicKey,
+            wallet.publicKey
+          )
+        )
+      ).amount.toString()
+    );
   });
 });
