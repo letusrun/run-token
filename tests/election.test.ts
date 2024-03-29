@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Election } from "../target/types/election";
-import { assert } from "chai";
+import { expect } from "chai";
 
 describe("election program", () => {
   const program = anchor.workspace.Election as Program<Election>;
@@ -22,7 +22,7 @@ describe("election program", () => {
       .accounts({ dataAccount: dataAccount.publicKey })
       .signers([dataAccount])
       .rpc();
-    console.log("Your transaction signature", tx);
+    console.log("Init program tx", tx);
 
     console.log(
       "Initial SOL in debit (data account)",
@@ -46,8 +46,8 @@ describe("election program", () => {
       .accounts({ dataAccount: dataAccount.publicKey })
       .view();
     console.log("runner0", res);
-    assert(res.name === "Golden Instructor");
-    assert(new anchor.BN(0).eq(res.vote));
+    expect(res.name === "Golden Instructor");
+    expect(new anchor.BN(0).eq(res.vote));
 
     // add runner 1
     const tx2 = await program.methods
@@ -63,8 +63,8 @@ describe("election program", () => {
       .accounts({ dataAccount: dataAccount.publicKey })
       .view();
     console.log("runner1", res2);
-    assert(res2.name === "Tian Tian Quan");
-    assert(new anchor.BN(0).eq(res2.vote));
+    expect(res2.name === "Tian Tian Quan");
+    expect(new anchor.BN(0).eq(res2.vote));
   });
 
   it("vote for runner 0", async () => {
@@ -72,7 +72,7 @@ describe("election program", () => {
     const acc1 = anchor.web3.Keypair.generate(); // test1 recipient
     const balance = await connect.getBalance(acc1.publicKey); // 0
     console.log("acc1 balance 1", balance / anchor.web3.LAMPORTS_PER_SOL); // 0
-    assert(balance === 0);
+    expect(balance === 0);
     // give test account 10 SOL
     const transaction = new anchor.web3.Transaction().add(
       anchor.web3.SystemProgram.transfer({
@@ -84,7 +84,7 @@ describe("election program", () => {
     await provider.sendAndConfirm(transaction);
     const balance2 = await connect.getBalance(acc1.publicKey); // 1
     console.log("acc1 balance 2", balance2 / anchor.web3.LAMPORTS_PER_SOL); // 1
-    assert(balance2 / anchor.web3.LAMPORTS_PER_SOL === 10);
+    expect(balance2 / anchor.web3.LAMPORTS_PER_SOL === 10);
 
     const tx = await program.methods
       .vote(new anchor.BN(0), new anchor.BN(1 * anchor.web3.LAMPORTS_PER_SOL))
@@ -95,14 +95,14 @@ describe("election program", () => {
 
     const balance3 = await connect.getBalance(acc1.publicKey); // 1
     console.log("acc1 balance 3", balance3 / anchor.web3.LAMPORTS_PER_SOL); // 1
-    assert(balance3 / anchor.web3.LAMPORTS_PER_SOL === 9);
+    expect(balance3 / anchor.web3.LAMPORTS_PER_SOL === 9);
 
     const res = await program.methods
       .getRunner(new anchor.BN(0))
       .accounts({ dataAccount: dataAccount.publicKey })
       .view();
     console.log("runner0 votes", res.vote / anchor.web3.LAMPORTS_PER_SOL);
-    assert(res.vote / anchor.web3.LAMPORTS_PER_SOL === 1);
+    expect(res.vote / anchor.web3.LAMPORTS_PER_SOL === 1);
 
     const tx2 = await program.methods
       .vote(new anchor.BN(0), new anchor.BN(2 * anchor.web3.LAMPORTS_PER_SOL))
@@ -118,14 +118,14 @@ describe("election program", () => {
       .accounts({ dataAccount: dataAccount.publicKey })
       .view();
     console.log("runner0 votes", res2.vote / anchor.web3.LAMPORTS_PER_SOL);
-    assert(res2.vote / anchor.web3.LAMPORTS_PER_SOL === 3);
+    expect(res2.vote / anchor.web3.LAMPORTS_PER_SOL === 3);
 
     // contract account balance
     const debit =
       (await connect.getBalance(dataAccount.publicKey)) /
       anchor.web3.LAMPORTS_PER_SOL;
     console.log("data account balance", debit);
-    assert(debit >= 3);
+    expect(debit >= 3);
   });
 
   it("vote for runner 1", async () => {
@@ -155,14 +155,14 @@ describe("election program", () => {
       .accounts({ dataAccount: dataAccount.publicKey })
       .view();
     console.log("runner1 votes", res.vote / anchor.web3.LAMPORTS_PER_SOL);
-    assert(res.vote / anchor.web3.LAMPORTS_PER_SOL === 100);
+    expect(res.vote / anchor.web3.LAMPORTS_PER_SOL === 100);
 
     // contract account balance
     const debit =
       (await connect.getBalance(dataAccount.publicKey)) /
       anchor.web3.LAMPORTS_PER_SOL;
     console.log("data account balance", debit);
-    assert(debit >= 103);
+    expect(debit >= 103);
   });
 
   it("withdraw", async () => {
@@ -263,6 +263,6 @@ describe("election program", () => {
       (await connect.getBalance(dataAccount.publicKey)) /
       anchor.web3.LAMPORTS_PER_SOL;
     console.log("data account balance", debit);
-    assert(debit === 0);
+    expect(debit === 0);
   });
 });

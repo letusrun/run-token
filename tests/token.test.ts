@@ -1,14 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Token } from "../target/types/token";
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import { Metaplex } from "@metaplex-foundation/js";
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  getAssociatedTokenAddressSync,
-  getOrCreateAssociatedTokenAccount,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import { getOrCreateAssociatedTokenAccount, } from "@solana/spl-token";
+import { Token } from "../target/types/token";
 
 describe("Transfer Tokens", () => {
   // Configure the client to use the local cluster.
@@ -22,10 +16,9 @@ describe("Transfer Tokens", () => {
 
   const program = anchor.workspace.Token as Program<Token>;
 
-  const nftTitle = "Homer NFT";
-  const nftSymbol = "HOMR";
-  const nftUri =
-    "https://raw.githubusercontent.com/solana-developers/program-examples/new-examples/tokens/tokens/.assets/nft.json";
+  const nftTitle = "Test Token";
+  const nftSymbol = "TEST";
+  const nftUri = "https://raw.githubusercontent.com/letusrun/run-token/main/token.json";
 
   it("Is initialized!", async () => {
     // Add your test here.
@@ -34,12 +27,12 @@ describe("Transfer Tokens", () => {
       .accounts({ dataAccount: dataAccount.publicKey })
       .signers([dataAccount])
       .rpc();
-    console.log("Your transaction signature", tx);
+    console.log("Init program tx", tx);
   });
 
   it("Create an SPL Token!", async () => {
     const metaplex = Metaplex.make(connection);
-    const metadataAddress = await metaplex
+    const metadataAddress = metaplex
       .nfts()
       .pdas()
       .metadata({ mint: mintKeypair.publicKey });
@@ -58,14 +51,14 @@ describe("Transfer Tokens", () => {
         mint: mintKeypair.publicKey,
         metadata: metadataAddress,
         mintAuthority: wallet.publicKey,
-        rentAddress: SYSVAR_RENT_PUBKEY,
-        metadataProgramId: new PublicKey(
+        rentAddress: anchor.web3.SYSVAR_RENT_PUBKEY,
+        metadataProgramId: new anchor.web3.PublicKey(
           "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
         ),
       })
       .signers([mintKeypair])
-      .rpc({ skipPreflight: true });
-    console.log("Your transaction signature", tx);
+      .rpc();
+    console.log("Create token tx", tx);
   });
 
   it("Mint some tokens to your wallet!", async () => {
@@ -86,7 +79,7 @@ describe("Transfer Tokens", () => {
         tokenAccount: tokenAccount.address,
         mint: mintKeypair.publicKey,
       })
-      .rpc({ skipPreflight: true });
+      .rpc();
     console.log("Your transaction signature", tx);
   });
 
