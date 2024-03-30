@@ -97,7 +97,7 @@ async function token(provider) {
 
   console.log("mint token to creator wallet...");
   // Wallet's associated token account address for mint
-  const tokenAccount = await getOrCreateAssociatedTokenAccount(
+  let tokenAccount = await getOrCreateAssociatedTokenAccount(
     connection,
     wallet.payer,
     mintAccount.publicKey,
@@ -115,4 +115,12 @@ async function token(provider) {
     })
     .rpc();
   console.log("mint token tx", tx3);
+
+  tokenAccount = await getOrCreateAssociatedTokenAccount(
+    connection,
+    wallet.payer,
+    mintAccount.publicKey,
+    wallet.publicKey
+  );
+  console.log("creator token account amount", tokenAccount.amount.toString());
 }

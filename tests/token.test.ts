@@ -2,7 +2,6 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Metaplex } from "@metaplex-foundation/js";
 import {
-  getAccount,
   getAssociatedTokenAddress,
   getOrCreateAssociatedTokenAccount,
   createBurnInstruction,
@@ -90,12 +89,11 @@ describe("Transfer Tokens", () => {
     console.log(
       "Token in wallet after mint",
       (
-        await getAccount(
+        await getOrCreateAssociatedTokenAccount(
           connection,
-          await getAssociatedTokenAddress(
-            mintAccount.publicKey,
-            wallet.publicKey
-          )
+          wallet.payer,
+          mintAccount.publicKey,
+          wallet.publicKey
         )
       ).amount.toString()
     );
@@ -132,12 +130,11 @@ describe("Transfer Tokens", () => {
     console.log(
       "Token in wallet after transfer",
       (
-        await getAccount(
+        await getOrCreateAssociatedTokenAccount(
           connection,
-          await getAssociatedTokenAddress(
-            mintAccount.publicKey,
-            wallet.publicKey
-          )
+          wallet.payer,
+          mintAccount.publicKey,
+          wallet.publicKey
         )
       ).amount.toString()
     );
@@ -155,12 +152,11 @@ describe("Transfer Tokens", () => {
     console.log(
       "Token in wallet after burn",
       (
-        await getAccount(
+        await getOrCreateAssociatedTokenAccount(
           connection,
-          await getAssociatedTokenAddress(
-            mintAccount.publicKey,
-            wallet.publicKey
-          )
+          wallet.payer,
+          mintAccount.publicKey,
+          wallet.publicKey
         )
       ).amount.toString()
     );
