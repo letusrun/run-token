@@ -1,4 +1,5 @@
 const anchor = require("@coral-xyz/anchor");
+const { BN } = anchor;
 const idl = {
   election: require("../target/idl/election.json"),
   token: require("../target/idl/token.json"),
@@ -7,6 +8,14 @@ const { Metaplex } = require("@metaplex-foundation/js");
 const { getOrCreateAssociatedTokenAccount } = require("@solana/spl-token");
 
 module.exports = token;
+
+const SUPPLY = 1680000000;
+const DECIMAL = 9;
+const NAME = "Runner's Token";
+const SYMBOL = "RUN";
+const URL =
+  "https://raw.githubusercontent.com/letusrun/run-token/main/token.json";
+const supply = new BN(SUPPLY).mul(new BN(10).pow(new BN(9)));
 
 // deploy election
 async function election(provider) {
@@ -39,6 +48,7 @@ async function election(provider) {
 async function token(provider) {
   anchor.setProvider(provider);
 
+  // generate solana needed accounts
   const dataAccount = anchor.web3.Keypair.generate();
   const mintAccount = anchor.web3.Keypair.generate();
   const wallet = provider.wallet;
@@ -52,15 +62,10 @@ async function token(provider) {
     .accounts({ dataAccount: dataAccount.publicKey })
     .signers([dataAccount])
     .rpc();
-  console.log("deploy tx", tx);
-  console.log("data account public", dataAccount.publicKey.toBase58());
-  console.log(
-    "Initial SOL in data account",
-    (await provider.connection.getBalance(dataAccount.publicKey)) /
-      anchor.web3.LAMPORTS_PER_SOL
-  );
 
-  console.log("Create token...");
+  console.log("initial token tx", tx);
+
+  console.log("create token...");
 
   const connection = provider.connection;
   const metaplex = Metaplex.make(connection);
@@ -69,16 +74,9 @@ async function token(provider) {
     .pdas()
     .metadata({ mint: mintAccount.publicKey });
 
-  const name = "Runner's Token";
-  const symbol = "RUN";
-  const supply = new anchor.BN(1680000000).mul(
-    new anchor.BN(10).pow(new anchor.BN(9))
-  );
-  const url =
-    "https://raw.githubusercontent.com/letusrun/run-token/main/token.json";
   // Add your test here.
   const tx1 = await program.methods
-    .createTokenMint(wallet.publicKey, 9, name, symbol, url)
+    .createTokenMint(wallet.publicKey, DECIMAL, NAME, SYMBOL, URL)
     .accounts({
       payer: wallet.publicKey,
       mint: mintAccount.publicKey,
@@ -95,9 +93,9 @@ async function token(provider) {
   console.log("mint account public", mintAccount.publicKey.toBase58());
   console.log("data account public", dataAccount.publicKey.toBase58());
 
-  console.log("mint token to creator wallet...");
+  console.log("mint token to creator wallet...", wallet.publicKey.toBase58());
   // Wallet's associated token account address for mint
-  let tokenAccount = await getOrCreateAssociatedTokenAccount(
+  const tokenAccount = await getOrCreateAssociatedTokenAccount(
     connection,
     wallet.payer,
     mintAccount.publicKey,
@@ -105,22 +103,12 @@ async function token(provider) {
   );
 
   const tx3 = await program.methods
-    .mintTo(
-      new anchor.BN(supply) // amount to mint
-    )
+    .mintTo(new BN(supply))
     .accounts({
-      mintAuthority: wallet.publicKey,
-      tokenAccount: tokenAccount.address,
-      mint: mintAccount.publicKey,
+      mintAuthority: wallet.publicKey, // owner account
+      tokenAccount: tokenAccount.address, // owner's token account
+      mint: mintAccount.publicKey, // token mint account
     })
     .rpc();
   console.log("mint token tx", tx3);
-
-  tokenAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    wallet.payer,
-    mintAccount.publicKey,
-    wallet.publicKey
-  );
-  console.log("creator token account amount", tokenAccount.amount.toString());
 }

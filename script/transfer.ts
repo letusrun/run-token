@@ -15,9 +15,9 @@ import { BN } from "bn.js";
 import db from "node-persist";
 
 // modify MINT and NETWORK when you migrate to create a new token
-const MINT = "8MxSS1hTph3XsgpzZsc4uM6d1Cw19uzvGEMr1AJaVNWB";
+const MINT = "DgLfEFZ8q2x4QaGtkizqUwjAeSxVP9qLNBd9Vmg2PAqz";
 const NETWORK = "http://localhost:8899";
-const TOKEN_PER_SOL = 66000;
+const TOKEN_PER_SOL = 33000;
 
 // get provider, wallet, connection
 const provider = anchor.AnchorProvider.env();
@@ -38,53 +38,61 @@ async function main() {
 // watch account change tx
 function watchTx(pubkey: PublicKey) {
   const connection = new Connection(NETWORK, "confirmed");
-  connection.onAccountChange(pubkey, async (accountInfo, context) => {
-    console.log(`Transaction detected in slot: ${context.slot}`);
-    console.log(`New balance: ${accountInfo.lamports / LAMPORTS_PER_SOL} SOL`);
-    // Additional processing can be done here
-    try {
-      // extract transactions
-      const res = await connection.getBlockSignatures(
-        context.slot,
-        "confirmed"
-      );
-      const txs = await connection.getParsedTransactions(res.signatures);
+  connection.onAccountChange(
+    pubkey,
+    async (accountInfo, context) => {
+      console.log(`Tx slot: ${context.slot}`);
+      // Additional processing can be done here
+      try {
+        // extract transactions
+        const res = await connection.getBlockSignatures(
+          context.slot,
+          "confirmed"
+        );
+        const txs = await connection.getParsedTransactions(res.signatures);
 
-      // foreach transactions
-      for (const item of txs) {
-        for (const item2 of item.transaction.message.instructions) {
-          // is system instruction?
-          if (item2.programId.equals(SystemProgram.programId)) {
-            console.log(item2);
-            const { type, info } = item2["parsed"];
-            if (
-              type &&
-              info &&
-              type === "transfer" &&
-              new anchor.web3.PublicKey(info.destination).equals(
-                wallet.publicKey
-              )
-            ) {
-              // transfer token to source
-              const tokenTx = await transferToken(
-                new PublicKey(info.source),
-                new BN(info.lamports)
-                  .div(new BN(LAMPORTS_PER_SOL))
-                  .mul(new BN(TOKEN_PER_SOL))
-                  .toNumber()
-              );
-              // log
-              const value = { ...info, tokenTx };
-              const key = item.transaction.signatures[0];
-              await db.setItem(key, value);
+        // foreach transactions
+        for (const item of txs) {
+          for (const item2 of item.transaction.message.instructions) {
+            // is system instruction?
+            if (item2.programId.equals(SystemProgram.programId)) {
+              const { type, info } = item2["parsed"];
+              if (
+                type &&
+                info &&
+                type === "transfer" &&
+                new anchor.web3.PublicKey(info.destination).equals(
+                  wallet.publicKey
+                )
+              ) {
+                console.log("Receive from", info.source);
+                console.log("Receive SOL", info.lamports / LAMPORTS_PER_SOL);
+                // transfer token to source
+                const tokenTx = await transferToken(
+                  new PublicKey(info.source),
+                  new BN(info.lamports)
+                    .div(new BN(LAMPORTS_PER_SOL))
+                    .mul(new BN(TOKEN_PER_SOL))
+                    .toNumber()
+                );
+                // log
+                const value = { ...info, tokenTx };
+                const key = item.transaction.signatures[0];
+                await db.setItem("current", context.slot);
+                await db.setItem(key, value);
+              }
             }
           }
         }
+      } catch (e) {
+        console.error(`Error fetching block for slot ${context.slot}:`, e);
+        await db.setItem(context.slot.toString(), e.message);
+      } finally {
+        console.log(`Total SOL: ${accountInfo.lamports / LAMPORTS_PER_SOL}`);
       }
-    } catch (error) {
-      console.error(`Error fetching block for slot ${context.slot}:`, error);
-    }
-  });
+    },
+    "confirmed"
+  );
 }
 
 // get associate token account
@@ -103,6 +111,7 @@ async function transferToken(pubkey: PublicKey, amount: number) {
   const from = await getATA(wallet.publicKey);
   const to = await getATA(pubkey);
   console.log("Transfer token to", pubkey.toBase58());
+  console.log("Transfer token amount", amount);
 
   const transaction = new Transaction();
   transaction.add(
@@ -131,7 +140,7 @@ async function transferSOL(pubkey: PublicKey, amount: number) {
 // simulate to buy
 async function simulate(drop: number, buy: number, max: number) {
   const recipient = anchor.web3.Keypair.generate();
-  console.log("Send some SOL to recipient", recipient.publicKey);
+  console.log("Send some SOL to recipient", recipient.publicKey.toBase58());
   const tx = await transferSOL(recipient.publicKey, drop);
   const balance =
     (await connection.getBalance(recipient.publicKey)) / LAMPORTS_PER_SOL;
@@ -156,7 +165,10 @@ async function simulate(drop: number, buy: number, max: number) {
       clearInterval(interval);
       getATA(recipient.publicKey)
         .then((acc) => {
-          console.log("Recipient final token amount", acc.amount);
+          console.log(
+            "Recipient final token amount",
+            acc.amount / BigInt(10) ** BigInt(9)
+          );
           return connection.getBalance(recipient.publicKey);
         })
         .then((balance) => console.log("Recipient final SOL amount", balance));
