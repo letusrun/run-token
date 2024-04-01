@@ -1,8 +1,8 @@
-# The Runner's Token
-
-**$RUN**
-
-_A token to unlock the world!_
+<div align=center>
+<img src="./icon.png" width=65 height=65/>
+</div>
+<h1 align=center>The Runner's Token ($RUN)</h1>
+<p align=center>Token to unlock the world!</p>
 
 ## Introduction
 
