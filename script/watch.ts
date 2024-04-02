@@ -46,6 +46,7 @@ function watchTx(pubkey: PublicKey) {
     pubkey,
     async (accountInfo, context) => {
       console.log(`Tx slot: ${context.slot}`);
+      await db.setItem("current", context.slot);
       // Additional processing can be done here
       try {
         // extract transactions
@@ -53,11 +54,16 @@ function watchTx(pubkey: PublicKey) {
           context.slot,
           "confirmed"
         );
+        console.log("get Signatures");
         const txs = await confirmedConnection.getParsedTransactions(
           res.signatures
         );
+        console.log("get txs");
 
         // foreach transactions
+        const transaction = new Transaction();
+        const values = [];
+        const keys = [];
         for (const item of txs) {
           for (const item2 of item.transaction.message.instructions) {
             // is system instruction?
@@ -74,21 +80,36 @@ function watchTx(pubkey: PublicKey) {
                 console.log("Receive from", info.source);
                 console.log("Receive SOL", info.lamports / LAMPORTS_PER_SOL);
                 // transfer token to source
-                const tokenTx = await transferToken(
+                const trans = await transferToken(
                   new PublicKey(info.source),
                   new BN(info.lamports)
                     .div(new BN(LAMPORTS_PER_SOL))
                     .mul(new BN(TOKEN_PER_SOL))
                     .toNumber()
                 );
+                transaction.add(trans);
+
                 // log
-                const value = { ...info, tokenTx };
                 const key = item.transaction.signatures[0];
-                await db.setItem("current", context.slot);
-                await db.setItem(key, value);
+                keys.push(key);
+                values.push(info);
+                await db.setItem(key, info);
               }
             }
           }
+        }
+
+        if (transaction.instructions.length) {
+          // send one time
+          const tx = await provider.sendAndConfirm(transaction);
+
+          // add transfer tx to db
+          for (const item of keys) {
+            const value = await db.getItem(item);
+            value.tokenTx = tx;
+            await db.setItem(item, value);
+          }
+          console.log("Transfer tokens tx", tx);
         }
       } catch (e) {
         console.error(`Error fetching block for slot ${context.slot}:`, e);
@@ -119,16 +140,12 @@ async function transferToken(pubkey: PublicKey, amount: number) {
   console.log("Transfer token to", pubkey.toBase58());
   console.log("Transfer token amount", amount);
 
-  const transaction = new Transaction();
-  transaction.add(
-    createTransferInstruction(
-      from.address,
-      to.address,
-      wallet.publicKey,
-      BigInt(new BN(amount).mul(new BN(10).pow(new BN(9))).toString())
-    )
+  return createTransferInstruction(
+    from.address,
+    to.address,
+    wallet.publicKey,
+    BigInt(new BN(amount).mul(new BN(10).pow(new BN(9))).toString())
   );
-  return await provider.sendAndConfirm(transaction);
 }
 
 // transfer some SOL to pubkey
@@ -180,6 +197,12 @@ async function simulate(drop: number, buy: number, max: number) {
         .then((balance) => console.log("Recipient final SOL amount", balance));
     }
   }, 3000);
+}
+
+async function sleep(time: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, time);
+  });
 }
 
 main();
