@@ -2,7 +2,8 @@
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
-    "transfer": "ts-node script/transfer.ts"
+    "transfer": "ts-node script/transfer.ts",
+    "watch": "ts-node script/watch.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.29.0",
