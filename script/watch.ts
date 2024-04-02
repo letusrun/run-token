@@ -55,6 +55,7 @@ function watchTx(pubkey: PublicKey) {
           "confirmed"
         );
         console.log("get Signatures");
+        await sleep(1000);
         const txs = await confirmedConnection.getParsedTransactions(
           res.signatures
         );
@@ -101,6 +102,7 @@ function watchTx(pubkey: PublicKey) {
 
         if (transaction.instructions.length) {
           // send one time
+          await sleep(500);
           const tx = await provider.sendAndConfirm(transaction);
 
           // add transfer tx to db
