@@ -12,9 +12,12 @@ import {
 } from "@solana/web3.js";
 import { BN } from "bn.js";
 import db from "node-persist";
+import { readFileSync } from "fs";
 
 // modify MINT and NETWORK when you migrate to create a new token
-const MINT = "DgLfEFZ8q2x4QaGtkizqUwjAeSxVP9qLNBd9Vmg2PAqz";
+const MINT = anchor.web3.Keypair.fromSecretKey(
+  Uint8Array.from(JSON.parse(readFileSync(".anchor/mint_account.json", "utf8")))
+).publicKey.toBase58();
 const TOKEN_PER_SOL = 33000;
 
 // get provider, wallet, connection

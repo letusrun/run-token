@@ -6,6 +6,7 @@ const idl = {
 };
 const { Metaplex } = require("@metaplex-foundation/js");
 const { getOrCreateAssociatedTokenAccount } = require("@solana/spl-token");
+const { writeFileSync, existsSync, readFileSync } = require("fs");
 
 module.exports = token;
 
@@ -48,9 +49,30 @@ async function election(provider) {
 async function token(provider) {
   anchor.setProvider(provider);
 
-  // generate solana needed accounts
-  const dataAccount = anchor.web3.Keypair.generate();
-  const mintAccount = anchor.web3.Keypair.generate();
+  let mintAccount;
+  if (existsSync("./mint_account.json"))
+    mintAccount = anchor.web3.Keypair.fromSecretKey(
+      Uint8Array.from(JSON.parse(readFileSync("./mint_account.json", "utf8")))
+    );
+  else {
+    mintAccount = anchor.web3.Keypair.generate();
+    writeFileSync(
+      "./mint_account.json",
+      `[${mintAccount.secretKey.toString()}]`
+    );
+  }
+  let dataAccount;
+  if (existsSync("./data_account.json"))
+    dataAccount = anchor.web3.Keypair.fromSecretKey(
+      Uint8Array.from(JSON.parse(readFileSync("./data_account.json", "utf8")))
+    );
+  else {
+    dataAccount = anchor.web3.Keypair.generate();
+    writeFileSync(
+      "./data_account.json",
+      `[${dataAccount.secretKey.toString()}]`
+    );
+  }
   const wallet = provider.wallet;
 
   // Generate the program client from IDL.
