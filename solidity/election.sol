@@ -1,6 +1,6 @@
 import "../lib/system.sol";
 
-@program_id("GzPfcvPz81cigZDy9M6w3vrL5iHbP67VkqVVNb1xGbrY")
+@program_id("TAs8imC3KXDBRqb4V997dV31bfL8sbjRPwWGYQEggEW")
 contract election {
     struct Runner {
         string name;

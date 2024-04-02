@@ -3,8 +3,8 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-election = "GzPfcvPz81cigZDy9M6w3vrL5iHbP67VkqVVNb1xGbrY"
-token = "9Hg5X6Tb9KrSx9sMzkeU32tzUyXbC5j9Yqx3TF4Eti4w"
+election = "TAs8imC3KXDBRqb4V997dV31bfL8sbjRPwWGYQEggEW"
+token = "8J6NBjh18YGyfGVfAw3SKZXeh4qiViUZE4tu9kZn4tvg"
 
 [registry]
 url = "https://api.apr.dev"
