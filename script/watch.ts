@@ -6,6 +6,7 @@ import {
 import {
   Connection,
   LAMPORTS_PER_SOL,
+  ParsedTransactionWithMeta,
   PublicKey,
   SystemProgram,
   Transaction,
@@ -50,16 +51,8 @@ function watchTx(pubkey: PublicKey) {
       // Additional processing can be done here
       try {
         // extract transactions
-        const res = await confirmedConnection.getBlockSignatures(
-          context.slot,
-          "confirmed"
-        );
-        console.log("get Signatures");
-        await sleep(1000);
-        const txs = await confirmedConnection.getParsedTransactions(
-          res.signatures
-        );
-        console.log("get txs");
+        const res = await getBlockSignatures(context.slot);
+        const txs = await getParsedTransactions(res.signatures);
 
         // foreach transactions
         const transaction = new Transaction();
@@ -80,13 +73,13 @@ function watchTx(pubkey: PublicKey) {
               ) {
                 console.log("Receive from", info.source);
                 console.log("Receive SOL", info.lamports / LAMPORTS_PER_SOL);
+                // ignore small transfer, at least buy 3 token
+                if (info.lamports / LAMPORTS_PER_SOL < 0.0001) return;
+
                 // transfer token to source
                 const trans = await transferToken(
                   new PublicKey(info.source),
-                  new BN(info.lamports)
-                    .div(new BN(LAMPORTS_PER_SOL))
-                    .mul(new BN(TOKEN_PER_SOL))
-                    .toNumber()
+                  new BN(info.lamports).mul(new BN(TOKEN_PER_SOL))
                 );
                 transaction.add(trans);
 
@@ -102,7 +95,6 @@ function watchTx(pubkey: PublicKey) {
 
         if (transaction.instructions.length) {
           // send one time
-          await sleep(500);
           const tx = await provider.sendAndConfirm(transaction);
 
           // add transfer tx to db
@@ -135,19 +127,48 @@ async function getATA(pubkey: PublicKey) {
 }
 
 // transfer token to pubkey
-async function transferToken(pubkey: PublicKey, amount: number) {
+async function transferToken(pubkey: PublicKey, amount: anchor.BN) {
   // get token accounts
   const from = await getATA(wallet.publicKey);
   const to = await getATA(pubkey);
   console.log("Transfer token to", pubkey.toBase58());
-  console.log("Transfer token amount", amount);
+  console.log(
+    "Transfer token amount",
+    BigInt(amount.toString()) / BigInt(LAMPORTS_PER_SOL)
+  );
 
   return createTransferInstruction(
     from.address,
     to.address,
     wallet.publicKey,
-    BigInt(new BN(amount).mul(new BN(10).pow(new BN(9))).toString())
+    BigInt(amount.toString())
   );
+}
+
+async function getBlockSignatures(slot: number) {
+  return await connection.getBlockSignatures(slot, "confirmed");
+}
+
+// too many signatures, split transactions
+async function getParsedTransactions(signatures: string[]) {
+  const txs: ParsedTransactionWithMeta[] = [];
+  const batchSize = 100; // 每批次处理的签名数量
+
+  for (let i = 0; i < signatures.length; i += batchSize) {
+    const batchSignatures = signatures.slice(i, i + batchSize);
+
+    // 获取当前批次的解析交易
+    const batchTxs = await Promise.all(
+      batchSignatures.map((signature) =>
+        connection.getParsedTransaction(signature, "confirmed")
+      )
+    );
+
+    txs.push(...batchTxs); // 将当前批次的解析交易追加到结果数组中
+    await sleep(500);
+  }
+
+  return txs;
 }
 
 // transfer some SOL to pubkey
@@ -156,7 +177,7 @@ async function transferSOL(pubkey: PublicKey, amount: number) {
     anchor.web3.SystemProgram.transfer({
       fromPubkey: wallet.publicKey,
       toPubkey: pubkey,
-      lamports: new BN(amount).mul(new BN(LAMPORTS_PER_SOL)).toNumber(),
+      lamports: amount * LAMPORTS_PER_SOL,
     })
   );
   return await provider.sendAndConfirm(transaction);
@@ -180,7 +201,7 @@ async function simulate(drop: number, buy: number, max: number) {
       anchor.web3.SystemProgram.transfer({
         fromPubkey: recipient.publicKey,
         toPubkey: wallet.publicKey,
-        lamports: new BN(buy).mul(new BN(LAMPORTS_PER_SOL)).toNumber(),
+        lamports: buy * LAMPORTS_PER_SOL,
       })
     );
     anchor.web3.sendAndConfirmTransaction(connection, transaction, [recipient]);
