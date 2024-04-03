@@ -160,7 +160,10 @@ async function getParsedTransactions(signatures: string[]) {
     // 获取当前批次的解析交易
     const batchTxs = await Promise.all(
       batchSignatures.map((signature) =>
-        connection.getParsedTransaction(signature, "confirmed")
+        connection.getParsedTransaction(signature, {
+          maxSupportedTransactionVersion: 0,
+          commitment: "confirmed",
+        })
       )
     );
 
