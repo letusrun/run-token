@@ -12,7 +12,7 @@ module.exports = token;
 
 const SUPPLY = 1680000000;
 const DECIMAL = 9;
-const NAME = "Runner's Token";
+const NAME = "Run Token";
 const SYMBOL = "RUN";
 const URL =
   "https://raw.githubusercontent.com/letusrun/run-token/main/token.json";
