@@ -153,24 +153,18 @@ async function getBlockSignatures(slot: number) {
 // too many signatures, split transactions
 async function getParsedTransactions(signatures: string[]) {
   const txs: ParsedTransactionWithMeta[] = [];
-  const batchSize = 10; // 每批次处理的签名数量
+  const batchSize = 100; // 每批次处理的签名数量
 
   for (let i = 0; i < signatures.length; i += batchSize) {
     console.log("Batch", i % batchSize);
     const batchSignatures = signatures.slice(i, i + batchSize);
-
-    // 获取当前批次的解析交易
-    const batchTxs = await Promise.all(
-      batchSignatures.map((signature) =>
-        connection.getParsedTransaction(signature, {
-          maxSupportedTransactionVersion: 0,
-          commitment: "confirmed",
-        })
-      )
+    const batchTxs = await connection.getParsedTransactions(
+      batchSignatures,
+      "confirmed"
     );
 
     txs.push(...batchTxs); // 将当前批次的解析交易追加到结果数组中
-    await sleep(800);
+    await sleep(500);
   }
 
   return txs;
