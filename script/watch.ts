@@ -145,7 +145,9 @@ async function transferToken(pubkey: PublicKey, amount: anchor.BN) {
 }
 
 async function getBlockSignatures(slot: number) {
-  return await connection.getBlockSignatures(slot, "confirmed");
+  const res = await connection.getBlockSignatures(slot, "confirmed");
+  console.log("Signatures", res.signatures.length);
+  return res;
 }
 
 // too many signatures, split transactions
@@ -154,6 +156,7 @@ async function getParsedTransactions(signatures: string[]) {
   const batchSize = 10; // 每批次处理的签名数量
 
   for (let i = 0; i < signatures.length; i += batchSize) {
+    console.log("Batch", i % batchSize);
     const batchSignatures = signatures.slice(i, i + batchSize);
 
     // 获取当前批次的解析交易
@@ -167,7 +170,7 @@ async function getParsedTransactions(signatures: string[]) {
     );
 
     txs.push(...batchTxs); // 将当前批次的解析交易追加到结果数组中
-    await sleep(500);
+    await sleep(800);
   }
 
   return txs;
