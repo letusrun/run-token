@@ -17,6 +17,7 @@ wallet = "~/.config/solana/id.json"
 test = "yarn mocha -r ts-node/register -t 1000000 tests/**/*.ts"
 transfer = "yarn transfer"
 watch = "yarn watch"
+burn = "yarn burn"
 # test = "yarn mocha -r ts-node/register -p ./tsconfig.json -t 1000000 tests/**/*.ts"
 
 [[test.genesis]]

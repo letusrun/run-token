@@ -78,6 +78,8 @@ async function token(provider) {
   // Generate the program client from IDL.
   const programId = new anchor.web3.PublicKey(idl.token.metadata.address);
   const program = new anchor.Program(idl.token, programId, provider);
+  const connection = provider.connection;
+  console.log("account", program.account);
 
   const tx = await program.methods
     .new()
@@ -89,7 +91,6 @@ async function token(provider) {
 
   console.log("create token...");
 
-  const connection = provider.connection;
   const metaplex = Metaplex.make(connection);
   const metadataAddress = metaplex
     .nfts()
