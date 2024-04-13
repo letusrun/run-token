@@ -156,12 +156,12 @@ async function getParsedTransactions(signatures: string[]) {
   const batchSize = 100; // 每批次处理的签名数量
 
   for (let i = 0; i < signatures.length; i += batchSize) {
-    console.log("Batch", i % batchSize);
+    console.log("Batch", i / batchSize);
     const batchSignatures = signatures.slice(i, i + batchSize);
-    const batchTxs = await connection.getParsedTransactions(
-      batchSignatures,
-      "confirmed"
-    );
+    const batchTxs = await connection.getParsedTransactions(batchSignatures, {
+      maxSupportedTransactionVersion: 0,
+      commitment: "confirmed",
+    });
 
     txs.push(...batchTxs); // 将当前批次的解析交易追加到结果数组中
     await sleep(500);
