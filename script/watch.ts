@@ -54,12 +54,12 @@ function watchTx(pubkey: PublicKey) {
         const res = await getBlockSignatures(context.slot);
         const txs = await getParsedTransactions(res.signatures);
 
-        // foreach transactions
+        // foreach transactions, find pubkeys transfer SOL to owner
         const transaction = new Transaction();
         const values = [];
-        const keys = [];
         for (const item of txs) {
-          for (const item2 of item.transaction.message.instructions) {
+          const instructions = item.transaction.message.instructions;
+          for (const item2 of instructions) {
             // is system instruction?
             if (item2.programId.equals(SystemProgram.programId)) {
               const { type, info } = item2["parsed"];
@@ -73,8 +73,8 @@ function watchTx(pubkey: PublicKey) {
               ) {
                 console.log("Receive from", info.source);
                 console.log("Receive SOL", info.lamports / LAMPORTS_PER_SOL);
-                // ignore small transfer, at least buy 3 token
-                if (info.lamports / LAMPORTS_PER_SOL < 0.0001) return;
+                // ignore tiny transfer, at least buy 300 tokens
+                if (info.lamports / LAMPORTS_PER_SOL < 0.01) continue;
 
                 // transfer token to source
                 const trans = await transferToken(
@@ -83,31 +83,30 @@ function watchTx(pubkey: PublicKey) {
                 );
                 transaction.add(trans);
 
-                // log
-                const key = item.transaction.signatures[0];
-                keys.push(key);
                 values.push(info);
-                await db.setItem(key, info);
               }
             }
           }
         }
 
         if (transaction.instructions.length) {
-          // send one time
+          // send in one time
           const tx = await provider.sendAndConfirm(transaction);
 
           // add transfer tx to db
-          for (const item of keys) {
-            const value = await db.getItem(item);
-            value.tokenTx = tx;
-            await db.setItem(item, value);
-          }
+          for (const i in values) values[i].tokenTx = tx;
           console.log("Transfer tokens tx", tx);
         }
+
+        // record slot transactions
+        await db.setItem("slot_" + context.slot, values);
       } catch (e) {
-        console.error(`Error fetching block for slot ${context.slot}:`, e);
-        await db.setItem(context.slot.toString(), e.message);
+        console.error(`Error slot: ${context.slot}:`, e);
+        // record errors
+        let errors = await db.getItem("error");
+        if (!errors) errors = [];
+        errors.push(context.slot);
+        await db.setItem("error", errors);
       } finally {
         console.log(`Total SOL: ${accountInfo.lamports / LAMPORTS_PER_SOL}`);
       }
@@ -152,7 +151,7 @@ async function getBlockSignatures(slot: number) {
 // too many signatures, split transactions
 async function getParsedTransactions(signatures: string[]) {
   const txs: ParsedTransactionWithMeta[] = [];
-  const batchSize = 100; // 每批次处理的签名数量
+  const batchSize = 10; // 每批次处理的签名数量
 
   for (let i = 0; i < signatures.length; i += batchSize) {
     const batchSignatures = signatures.slice(i, i + batchSize);

@@ -79,7 +79,6 @@ async function token(provider) {
   const programId = new anchor.web3.PublicKey(idl.token.metadata.address);
   const program = new anchor.Program(idl.token, programId, provider);
   const connection = provider.connection;
-  console.log("account", program.account);
 
   const tx = await program.methods
     .new()
