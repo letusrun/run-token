@@ -3,14 +3,15 @@
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "transfer": "ts-node script/transfer.ts",
-    "watch": "ts-node script/watch.ts",
+    "watch": "nodemon --exec ts-node script/watch.ts",
     "burn": "ts-node script/burn.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.29.0",
     "@metaplex-foundation/js": "^0.20.1",
     "@solana/spl-token": "^0.4.3",
-    "node-persist": "^4.0.1"
+    "node-persist": "^4.0.1",
+    "nodemon": "^3.1.0"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.5",
