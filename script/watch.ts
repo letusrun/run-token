@@ -19,6 +19,7 @@ import { readFileSync } from "fs";
 const MINT = anchor.web3.Keypair.fromSecretKey(
   Uint8Array.from(JSON.parse(readFileSync(".anchor/mint_account.json", "utf8")))
 ).publicKey.toBase58();
+console.log("TOKEN", MINT);
 const TOKEN_PER_SOL = 33000;
 
 // get provider, wallet, connection
@@ -129,7 +130,9 @@ async function getATA(pubkey: PublicKey) {
 async function transferToken(pubkey: PublicKey, amount: anchor.BN) {
   // get token accounts
   const from = await getATA(wallet.publicKey);
+  console.log("Token from", from.address);
   const to = await getATA(pubkey);
+  console.log("Token to", from.address);
   console.log("Transfer token to", pubkey.toBase58());
   console.log(
     "Transfer token amount",
@@ -153,7 +156,7 @@ async function getBlockSignatures(slot: number) {
 // too many signatures, split transactions
 async function getParsedTransactions(signatures: string[]) {
   const txs: ParsedTransactionWithMeta[] = [];
-  const batchSize = 20; // 每批次处理的签名数量
+  const batchSize = 150; // 每批次处理的签名数量
 
   for (let i = 0; i < signatures.length; i += batchSize) {
     console.log("Batch", i / batchSize);
@@ -164,7 +167,7 @@ async function getParsedTransactions(signatures: string[]) {
     });
 
     txs.push(...batchTxs); // 将当前批次的解析交易追加到结果数组中
-    await sleep(1000);
+    await sleep(5000);
   }
 
   return txs;
